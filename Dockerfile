@@ -13,7 +13,10 @@ RUN echo $Host >> hostname
 WORKDIR /etc
 RUN echo $IP $Domain >> hosts
 
+RUN dnf --enablerepo=PowerTools install libsrtp-devel gsm-devel speex-devel libedit libedit-devel diffutils wget -y
+
 RUN yum update -y && \
+#    yum update mysql-community-release -y && \
     yum install -y epel-release && \
     yum install \
         git \
@@ -42,10 +45,15 @@ RUN yum update -y && \
         gsm-devel \
         speex-devel \
         gettext \
+        unixODBC \
+        unixODBC-devel \
+        libtool-ltdl \
+        libtool-ltdl-devel \
+        mariadb-connector-odbc \
         -y
 
 WORKDIR /usr/src
-RUN git clone -b 15.4.0 --depth 1 https://github.com/asterisk/asterisk.git
+RUN git clone -b 17.6.0 --depth 1 https://github.com/asterisk/asterisk.git
 
 WORKDIR /usr/src/asterisk
 # Configure
@@ -114,7 +122,7 @@ RUN menuselect/menuselect \
   --enable res_pjsip_pubsub \
   --enable res_pjsip_refer \
   --enable res_pjsip_registrar \
-  --enable res_pjsip_registrar_expire \
+#  --enable res_pjsip_registrar_expire \
   --enable res_pjsip_rfc3326 \
   --enable res_pjsip_sdp_rtp \
   --enable res_pjsip_send_to_voicemail \
@@ -148,12 +156,25 @@ RUN sed -i -e 's/# MAXFILES=/MAXFILES=/' /usr/sbin/safe_asterisk
 
 # Copy in default configs
 COPY http.conf /etc/asterisk/http.conf
+COPY extconfig.conf /etc/asterisk/extconfig.conf
+COPY asterisk.conf /etc/asterisk/asterisk.conf
+COPY res_config_mysql.conf /etc/asterisk/res_config_mysql.conf
+COPY odbc.ini /etc/odbc.ini
+COPY res_odbc.conf /etc/asterisk/res_odbc.conf
+COPY cdr_adaptive_odbc.conf /etc/asterisk/cdr_adaptive_odbc.conf
+COPY ari.conf /etc/asterisk/ari.conf
+COPY logger.conf /etc/asterisk/logger.conf
+COPY manager.conf /etc/asterisk/manager.conf
+COPY odbcinst.ini /etc/odbcinst.ini
 
 # This is weird huh? I'd shell into the container and get errors about en_US.UTF-8 file not found
 # found @ https://github.com/CentOS/sig-cloud-instance-images/issues/71
 #RUN localedef -i en_US -f UTF-8 en_US.UTF-8
 
 VOLUME /var/lib/asterisk
+VOLUME /etc/asterisk
+VOLUME /var/spool/asterisk
+
 EXPOSE 5060
 EXPOSE 10000-20000/UDP
 # And run asterisk in the foreground.

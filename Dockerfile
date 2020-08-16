@@ -1,6 +1,5 @@
 FROM centos:latest
-MAINTAINER Miguel Lorca <info@miflop.com>
-ENV build_date 06/05/2018
+ENV build_date 15/08/2020
 ARG Host
 ARG IP
 ARG Domain
